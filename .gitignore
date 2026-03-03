@@ -1,2 +1,7 @@
 .idea
 /70016_1_spec.pdf
+/.venv
+/artifacts
+__pycache__/
+*.pyc
+tmp*/
