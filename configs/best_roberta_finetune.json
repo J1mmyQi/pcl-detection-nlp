@@ -1,0 +1,25 @@
+{
+  "data_dir": "data",
+  "artifacts_dir": "artifacts/roberta_download",
+  "model_name": "roberta",
+  "random_state": 42,
+  "tfidf": {},
+  "svm": {},
+  "ensemble": {},
+  "roberta": {
+    "pretrained_model_name": "roberta-base",
+    "max_length": 128,
+    "learning_rate": 2e-05,
+    "batch_size": 16,
+    "epochs": 3,
+    "threshold": 0.0,
+    "allow_download": false,
+    "cache_dir": "hf_cache",
+    "huggingface_token": "",
+    "freeze_backbone": false,
+    "use_class_weights": true,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.1,
+    "tune_threshold": false
+  }
+}

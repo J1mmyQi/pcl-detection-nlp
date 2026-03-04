@@ -1,0 +1,451 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{float}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=blue,
+    citecolor=blue
+}
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+\newcommand{\courseworktitle}{Patronising and Condescending Language Detection}
+\newcommand{\leaderboardname}{TODO\_LEADERBOARD\_NAME}
+\newcommand{\repositoryurl}{TODO\_REPOSITORY\_URL}
+\newcommand{\studentname}{TODO\_YOUR\_NAME}
+
+\newcommand{\optionalfigure}[4]{
+    \begin{figure}[H]
+        \centering
+        \IfFileExists{#1}{
+            \includegraphics[width=#2]{#1}
+        }{
+            \fbox{
+                \parbox[c][2.2in][c]{0.85\linewidth}{
+                    \centering
+                    Placeholder for figure:\\
+                    \texttt{#1}
+                }
+            }
+        }
+        \caption{#3}
+        \label{#4}
+    \end{figure}
+}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\Large \textbf{\courseworktitle} \par}
+    \vspace{1.2em}
+    {\large A coursework report in research-paper format \par}
+    \vspace{2em}
+
+    \begin{tabular}{>{\raggedright\arraybackslash}p{0.28\linewidth} p{0.62\linewidth}}
+        Author & \studentname \\
+        Leaderboard name & \texttt{\leaderboardname} \\
+        Repository & \url{\repositoryurl} \\
+        Task & SemEval 2022 Task 4, Subtask 1 (binary PCL classification) \\
+    \end{tabular}
+
+    \vfill
+
+    {\small
+    This report is structured to match the coursework specification while using a
+    concise research-paper presentation style. The content below currently
+    reflects the implemented hybrid sparse ensemble and the latest tuned
+    local experimental results available in the repository.
+    \par}
+\end{titlepage}
+
+\section{Introduction}
+Patronising and condescending language (PCL) detection is difficult because the
+relevant signal lies in framing rather than in topic alone. Paragraphs about
+refugees, migrants, women, or poor families may be neutral, supportive, or
+condescending while using broadly similar vocabulary, so the task depends on
+distinguishing rhetorical stance rather than simply identifying subject matter.
+
+This report presents a compact research workflow for the coursework task: it
+reviews the task literature, analyzes the dataset, motivates the modeling
+approach, and then evaluates the selected system on the official development
+split. The resulting model is a hybrid sparse ensemble built from tuned TF-IDF
+features and complementary linear members. It improves substantially over the
+initial local baseline while remaining interpretable and inexpensive to iterate
+on.
+
+\section{Critical Review of the Task Paper}
+
+\subsection{Research problem and motivation}
+The reviewed work asks whether NLP systems can detect patronising and
+condescending language in paragraphs about vulnerable communities. This is
+challenging because the distinction is primarily pragmatic: the same topics may
+appear in both neutral reporting and PCL, while the label depends on framing,
+tone, and implied agency. The task is therefore a meaningful benchmark for
+models that claim to capture stance rather than only topic.
+
+\subsection{Main contributions of the reviewed paper}
+The task paper and the earlier dataset paper make four practical contributions
+\cite{semeval2022,baseline}: they define a shared supervised task, release a
+curated dataset, provide both binary and fine-grained label settings, and
+establish baseline systems with a common evaluation protocol. Their most useful
+contribution for this project is the operationalization of a socially subtle
+phenomenon into a reproducible benchmark with fixed splits, submission files,
+and a clear primary metric.
+
+\subsection{What the paper does well}
+Its main strength is benchmark design. The task is difficult for the right
+reason: PCL is often subtle, context-dependent, and superficially similar to
+sympathetic language. The train/dev/test split supports fair comparison, while
+the binary setting keeps the baseline problem tractable without making it easy.
+The connection to a richer label taxonomy also gives the benchmark value beyond
+the shared-task setting.
+
+\subsection{Limitations and open issues}
+The key limitation is annotation subjectivity: the boundary between empathy and
+condescension is often ambiguous, so some label noise is unavoidable. A second
+limitation is that strong scores can still come from shallow lexical shortcuts,
+especially when certain community keywords recur. Finally, the benchmark
+measures a controlled proxy for the problem rather than the full social
+phenomenon, so leaderboard performance should not be treated as complete
+evidence of discourse-level understanding.
+
+\subsection{How the literature review informed this project}
+The review directly informed three decisions in this project: selecting
+positive-class F1 as the main metric, using class-balanced training to address
+imbalance, and extending a word-only TF-IDF baseline with character n-grams to
+capture some stylistic variation. It also supports the broader conclusion of
+this report: a sparse baseline can be improved meaningfully, but full task
+performance likely requires stronger contextual modeling.
+
+\section{Dataset Analysis and Preprocessing}
+
+\subsection{Dataset overview}
+The coursework uses the \texttt{dontpatronizeme\_pcl.tsv} data together with the
+official train, development, and test splits. The implemented loader converts
+the original ordinal labels into the binary task required by the specification:
+labels \texttt{0} and \texttt{1} are mapped to \texttt{No PCL}, while labels
+\texttt{2}, \texttt{3}, and \texttt{4} are mapped to \texttt{PCL}.
+
+Table~\ref{tab:data-summary} summarizes the currently loaded splits.
+
+\begin{table}[H]
+    \centering
+    \caption{Summary of the available splits after binary conversion}
+    \label{tab:data-summary}
+    \begin{tabular}{lrrrrr}
+        \toprule
+        Split & Size & Positives & Negatives & Avg. tokens & Max tokens \\
+        \midrule
+        Train & 8375 & 794 & 7581 & 48.68 & 909 \\
+        Dev   & 2094 & 199 & 1895 & 47.41 & 272 \\
+        Test  & 3832 & -- & -- & 48.36 & 379 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+The most important immediate observation is the severe class imbalance. The
+positive class accounts for roughly 9.5\% of both the train and development
+splits. This means accuracy would be a misleading primary metric and justifies
+the coursework's emphasis on the positive-class F1 score.
+
+\subsection{EDA technique 1: class distribution analysis}
+The first EDA step is class-distribution profiling. Because the dataset is
+strongly skewed toward the negative class, the current classifier uses
+\texttt{class\_weight="balanced"} so minority-class errors matter more during
+training.
+
+\optionalfigure
+    {report_assets/eda_label_distribution.png}
+    {0.7\linewidth}
+    {Binary label distribution in the training split.}
+    {fig:label-distribution}
+
+\subsection{EDA technique 2: keyword frequency analysis}
+The second EDA technique is lexical frequency analysis over topic keywords. In
+the positive training subset, the most frequent keywords are
+\texttt{homeless}, \texttt{in-need}, \texttt{poor-families}, and
+\texttt{hopeless}. These keywords are informative but not decisive: they mark
+topic domains, while the label still depends on how those groups are framed.
+
+\begin{table}[H]
+    \centering
+    \caption{Top keywords in positive training examples}
+    \label{tab:positive-keywords}
+    \begin{tabular}{lr}
+        \toprule
+        Keyword & Count \\
+        \midrule
+        homeless & 149 \\
+        in-need & 143 \\
+        poor-families & 112 \\
+        hopeless & 98 \\
+        refugee & 73 \\
+        disabled & 67 \\
+        vulnerable & 60 \\
+        women & 38 \\
+        migrant & 31 \\
+        immigrant & 23 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\optionalfigure
+    {report_assets/top_positive_keywords.png}
+    {0.8\linewidth}
+    {Most frequent topic keywords in positive training examples.}
+    {fig:keyword-frequency}
+
+This observation motivates a mixed feature space: lexical features are retained
+because they carry signal, but character n-grams are added to capture recurring
+local phrasing patterns beyond simple topic words.
+
+\subsection{Preprocessing decisions}
+The preprocessing pipeline is intentionally light:
+\begin{itemize}[leftmargin=1.5em]
+    \item labels are converted to the binary task required by the specification;
+    \item Unicode accents are normalized during TF-IDF feature extraction;
+    \item stop-word removal is disabled in the current best configuration;
+    \item word-level and character-level TF-IDF features are both enabled;
+    \item no heavy text normalization is applied, so most stylistic cues remain available.
+\end{itemize}
+
+This is deliberate. Heavy normalization could erase the same stylistic cues that
+help distinguish neutral reporting from soft condescension.
+
+\section{Proposed Approach}
+
+\subsection{Method summary}
+The implemented system is a hybrid sparse ensemble rather than a single
+classifier. The best current configuration combines:
+\begin{itemize}[leftmargin=1.5em]
+    \item two class-balanced linear TF-IDF + SVM members with complementary word n-gram ranges;
+    \item one lower-dimensional TF-IDF + SVD + logistic member to add a smoother latent signal;
+    \item shared character-within-word 3--5 gram features across all members;
+    \item weighted score fusion with a tuned fixed decision threshold.
+\end{itemize}
+
+\subsection{Rationale}
+This design addresses a specific weakness of the plain baseline. Word n-grams
+capture topic and short lexical cues, but many PCL examples differ mainly in
+framing. Character n-grams improve robustness to local wording variation, while
+the ensemble mixes a conservative member, a higher-recall member, and a latent
+compressed member so that no single sparse decision boundary dominates. The
+result is a deliberate shift toward recall while preserving a degree of score
+stability.
+
+\subsection{Expected outcome}
+The target was to improve recall on PCL examples without collapsing precision.
+That objective was partially achieved: the tuned system raises positive-class F1
+mainly by recovering more positives on the development split. The method remains
+deliberately conservative in scope, improving a sparse baseline rather than
+replacing it with a heavier transformer pipeline.
+
+\section{Implementation and Training Setup}
+
+\subsection{System description}
+The codebase is organized into three functional layers:
+\begin{itemize}[leftmargin=1.5em]
+    \item \texttt{data\_pipeline.py}: loading, preprocessing, and EDA;
+    \item \texttt{models.py}: model definitions;
+    \item \texttt{training\_pipeline.py}: training, evaluation, and export.
+\end{itemize}
+
+The companion notebook (\texttt{coursework\_runner.ipynb}) is the main
+interactive runner, while the Python modules remain the implementation source
+of truth. Historical exploratory runs are retained separately under
+\texttt{archive/} so that the active repository surface stays focused on the
+final deliverable path.
+
+\subsection{Best configuration}
+Table~\ref{tab:best-config} summarizes the current best configuration stored in
+\texttt{configs/best\_hybrid\_ensemble.json}.
+
+\begin{table}[H]
+    \centering
+    \caption{Current best hybrid sparse ensemble configuration}
+    \label{tab:best-config}
+    \begin{tabular}{ll}
+        \toprule
+        Component & Setting \\
+        \midrule
+        Member 1 & 1--2 word grams, 3--5 char grams, linear SVM, \texttt{C = 0.18} \\
+        Member 2 & 1--3 word grams, 3--5 char grams, linear SVM, \texttt{C = 0.22} \\
+        Member 3 & 1--2 word grams, 3--5 char grams, SVD(150) + logistic, \texttt{C = 1.0} \\
+        Stop words & None across all members \\
+        Minimum document frequency & 1 across all members \\
+        Ensemble weights & 0.175 / 0.525 / 0.300 \\
+        Decision rule & weighted score average with threshold \texttt{0.1738} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Development-set results}
+The current best development-set metrics are shown in
+Table~\ref{tab:dev-results}. These values were read from the latest
+\texttt{artifacts/best\_hybrid\_ensemble/metrics.json} file.
+
+\begin{table}[H]
+    \centering
+    \caption{Development-set performance of the current best model}
+    \label{tab:dev-results}
+    \begin{tabular}{lrrrrrrr}
+        \toprule
+        Precision & Recall & F1 & TP & FP & FN & TN \\
+        \midrule
+        0.4075 & 0.5427 & 0.4655 & 108 & 157 & 91 & 1738 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Comparison across key TF-IDF + SVM iterations}
+    \label{tab:experiment-comparison}
+    \begin{tabular}{lrrr}
+        \toprule
+        Configuration & Precision & Recall & F1 \\
+        \midrule
+        Initial baseline (\texttt{tfidf\_svm}) & 0.4559 & 0.3116 & 0.3701 \\
+        Best single sparse model (\texttt{exp\_22}) & 0.4125 & 0.4975 & 0.4510 \\
+        Final hybrid sparse ensemble & 0.4075 & 0.5427 & 0.4655 \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Relative to the original local baseline, the tuned system improves the
+development-set F1 score by approximately 0.094 absolute points. The main trend
+is a deliberate shift toward higher recall: the final configuration accepts more
+false positives than the original baseline, but it recovers substantially more
+true positive PCL cases. For this task, that trade-off is reasonable because the
+positive class is rare and under-detection is a major failure mode.
+
+The comparison in Table~\ref{tab:experiment-comparison} also serves as a small
+ablation-style local evaluation: it shows that the largest gain comes from
+threshold and feature tuning of a single sparse model, while the final ensemble
+adds a smaller but still useful incremental lift by combining complementary
+members.
+
+\optionalfigure
+    {report_assets/dev_confusion_matrix.png}
+    {0.55\linewidth}
+    {Confusion matrix for the best development-set run.}
+    {fig:confusion-matrix}
+
+The current model is stronger than the earlier untuned baseline used at the
+start of the project, but it still remains below the official RoBERTa-based
+reference reported in the coursework specification. Its main value is therefore
+as a transparent and well-analyzed strong sparse baseline rather than as a
+state-of-the-art final solution.
+
+\subsection{Why the tuned model performs better}
+The improvement mainly comes from combining topical lexical evidence with
+character-level phrasing cues. Compared with the earlier word-only model, the
+final system is less conservative and more willing to recover subtle positives.
+This does not solve the full discourse problem, but it improves sensitivity to
+small wording changes that correlate with PCL.
+
+\subsection{Error analysis}
+The development-set errors follow a clear pattern: many false negatives are
+supportive or policy-oriented references to vulnerable groups that lack an
+overt lexical cue. Representative failure modes include:
+\begin{itemize}[leftmargin=1.5em]
+    \item factual refugee and migrant reporting that remains close to the PCL decision boundary;
+    \item long news-style sentences where the key framing cue is diluted by surrounding context;
+    \item examples about women or poor families where condescension depends on tone rather than explicit wording.
+\end{itemize}
+
+This suggests that the current sparse linear model still underfits
+discourse-level context: it often identifies topic correctly but not rhetorical
+stance.
+
+\begin{table}[H]
+    \centering
+    \caption{Representative qualitative errors from the development set}
+    \label{tab:error-examples}
+    \begin{tabular}{p{0.12\linewidth} p{0.16\linewidth} p{0.62\linewidth}}
+        \toprule
+        ID & Keyword & Observation \\
+        \midrule
+        8330 & refugee & A short sentence about refugee resettlement is predicted as non-PCL, showing that neutral policy language near the decision boundary is still often missed. \\
+        1572 & migrant & A sentence about dignity and disdain toward migrant workers is predicted as non-PCL, suggesting the model under-detects more implicit evaluative framing. \\
+        5506 & vulnerable & A sentence about helping ``vulnerable families'' is predicted as non-PCL, indicating that positive institutional language can still carry soft framing cues the sparse model does not reliably capture. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+False positives show the complementary failure mode. Once recall is increased,
+the model becomes more willing to label emotionally charged language as PCL even
+when the framing is not clearly condescending. This is the main trade-off of the
+current system: broader positive coverage makes the decision boundary harder to
+maintain with purely linear sparse features.
+
+\subsection{Implementation notes}
+The repository now validates submission formatting before writing prediction
+files. This ensures that:
+\begin{itemize}[leftmargin=1.5em]
+    \item each file contains exactly one prediction per input example;
+    \item each line contains only \texttt{0} or \texttt{1};
+    \item the exported files are directly compatible with the coursework
+    submission requirements.
+\end{itemize}
+
+\section{Conclusion}
+This report documents a complete local PCL detection pipeline in a format that
+matches the coursework requirements while retaining a compact research-paper
+presentation. The best implemented system is a hybrid sparse ensemble with
+mixed word and character features, and it improves clearly over the earlier
+local baseline on the development split.
+
+The experimental gains are real but bounded. The current system is strong
+enough to serve as a credible, well-analyzed baseline, yet its remaining errors
+show that sparse linear features still struggle with discourse-level framing.
+The most plausible path beyond the present results is therefore not further
+small feature tuning, but a stronger contextual model implemented with a
+pretrained transformer backbone.
+
+\subsection*{Next technical step}
+The most justified next step is to move from sparse linear features to a
+contextual encoder that can represent tone across a wider span of text. The
+current error profile suggests that many remaining mistakes are not caused by
+missing topic information, but by missing discourse sensitivity. A transformer
+fine-tuning pipeline is therefore the most plausible route to closing the gap to
+the stronger reference baseline described in the coursework specification.
+
+\section*{Submission notes}
+\begin{itemize}[leftmargin=1.5em]
+    \item Replace the title-page placeholders for author name, leaderboard name, and repository URL before final submission.
+    \item Keep the committed copies of the notebook-generated figures in \texttt{report\_assets/} so the compiled report includes the final plots.
+    \item Preserve \texttt{dev.txt} and \texttt{test.txt} in their submission-ready form.
+\end{itemize}
+
+\section*{References}
+\begin{thebibliography}{9}
+
+\bibitem{semeval2022}
+SemEval 2022 Task 4: Patronizing and Condescending Language Detection.\\
+Task website: \url{https://sites.google.com/view/pcl-detection-semeval2022/}
+
+\bibitem{baseline}
+Perez-Almendros, C. et al. ``You Don't Look Poor'': A Dataset and Baselines for
+Contextualized Detection of Patronizing and Condescending Language.\\
+ACL Anthology entry: \url{https://aclanthology.org/2020.coling-main.518/}
+
+\end{thebibliography}
+
+\end{document}

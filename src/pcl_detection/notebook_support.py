@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 import unittest
 
+from .experiment_utils import rank_experiments
 from .training_pipeline import export_predictions_from_trained_config
 
 
@@ -27,7 +28,7 @@ def build_notebook_context(start: Path) -> NotebookContext:
     root = find_repo_root(start)
     return NotebookContext(
         root=root,
-        best_config_path=root / "configs" / "best_tfidf_svm.json",
+        best_config_path=root / "configs" / "best_artifact_ensemble.json",
     )
 
 
@@ -72,3 +73,8 @@ def export_default_submission_files(config_path: str | Path, repo_root: str | Pa
         "dev_preview": dev_lines[:5],
         "test_preview": test_lines[:5],
     }
+
+
+def summarize_experiments(repo_root: str | Path, limit: int = 10) -> list[dict[str, object]]:
+    root = Path(repo_root)
+    return rank_experiments(root / "artifacts", limit=limit)

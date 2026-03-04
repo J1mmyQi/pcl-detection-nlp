@@ -1,33 +1,45 @@
 # pcl-detection-nlp
 
-Project scaffold for the SemEval 2022 PCL binary classification coursework.
+Coursework repository for the SemEval 2022 PCL binary classification task.
 
 The current structure is aligned with the coursework spec in `70016_1_spec.pdf` and the baseline direction in `paper/2020.coling-main.518.pdf`:
 
 - task focus: SemEval 2022 Task 4 Subtask 1 (`PCL` vs `No PCL`)
 - required outputs: `dev.txt` and `test.txt`
 - baseline-ready modules: data loading, binary label conversion, EDA, evaluation, submission export
-- model slots: a working `tfidf_svm` baseline and a `roberta` training stub for the next iteration
+- model families: tuned sparse baselines, sparse ensembles, and an optional `roberta` training path
 
 ## Structure
 
 ```text
 coursework_runner.ipynb
+BestModel/
+archive/
+  configs/
+  artifacts/
 configs/
   baseline.json
+  best_artifact_ensemble.json
+  best_roberta_finetune.json
+  best_roberta_probe.json
+  best_hybrid_ensemble.json
+  best_tfidf_ensemble.json
   best_tfidf_svm.json
-  exp_*.json
+  roberta_download_template.json
+report_assets/
 basic_tests.ps1
 src/
   pcl_detection/
     cli.py
     config.py
     data_pipeline.py
+    experiment_utils.py
     models.py
+    notebook_support.py
     training_pipeline.py
-    workflow.py
 tests/
   test_data.py
+  test_experiments.py
   test_export.py
   test_metrics.py
 ```
@@ -35,12 +47,16 @@ tests/
 ## Project organization
 
 - `coursework_runner.ipynb`: the main interactive notebook for step-by-step coursework execution, including tests, EDA, training, export, and figures.
-- `configs/`: experiment configurations. `best_tfidf_svm.json` stores the current recommended tuned baseline, while the `exp_*.json` files capture comparison runs.
+- `BestModel/`: the final selected local model bundle, including the chosen config and the latest local dev metrics.
+- `archive/`: historical exploratory configs, search outputs, and artifacts that are retained for traceability but removed from the main working surface.
+- `configs/`: active experiment configurations. `best_artifact_ensemble.json` stores the current recommended local model, `best_roberta_finetune.json` keeps the strongest single fine-tuned RoBERTa checkpoint, `best_roberta_probe.json` keeps the strongest linear-probe variant, `best_hybrid_ensemble.json` keeps the strongest non-transformer local model, `best_tfidf_ensemble.json` keeps the strongest pure sparse-score ensemble, `best_tfidf_svm.json` keeps the best single-model sparse baseline, while `baseline.json` and `roberta_download_template.json` remain as lightweight starting points.
+- `report_assets/`: committed copies of the notebook-generated figures used by `report.tex`.
 - `basic_tests.ps1`: a small helper script for the most common test groups.
 - `src/pcl_detection/data_pipeline.py`: data loading, label conversion, preprocessing, and EDA logic.
-- `src/pcl_detection/models.py`: model definitions, including the tuned TF-IDF + SVM baseline and the RoBERTa scaffold.
+- `src/pcl_detection/models.py`: model definitions, including sparse baselines, sparse ensembles, and the optional RoBERTa path.
 - `src/pcl_detection/training_pipeline.py`: training, evaluation, error analysis, and submission export logic.
-- `src/pcl_detection/workflow.py`: compatibility layer that re-exports the older workflow API used by the current tests.
+- `src/pcl_detection/experiment_utils.py`: experiment ranking helpers for comparing saved runs under `artifacts/`.
+- The tests now import directly from the concrete pipeline modules, so there is no separate workflow compatibility layer to maintain.
 - `tests/`: regression checks for data loading, metric correctness, and submission-format validation.
 
 ## Execution surfaces
@@ -49,13 +65,20 @@ tests/
 - CLI-based execution: the package CLI remains available as a lower-level interface for repeatable experiments and internal batch operations.
 - Config-driven experiments: switching files in `configs/` lets you compare model variants without modifying source code.
 - Artifact review: the `artifacts/` directory is the main place to compare metrics, saved models, EDA summaries, and dev-set error examples.
+- Historical runs are intentionally moved under `archive/` so the root `configs/` and `artifacts/` directories stay focused on the final deliverable path.
+- Built-in experiment ranking: the CLI now includes a `compare` subcommand to summarize and rank saved experiment metrics.
 
 ## Current baseline status
 
 - The current task target is SemEval 2022 Task 4 Subtask 1 (`PCL` vs `No PCL`).
 - The required submission files are `dev.txt` and `test.txt`.
-- The current recommended baseline is the tuned TF-IDF + SVM configuration in `configs/best_tfidf_svm.json`.
-- The repository also includes a RoBERTa training scaffold, but it is still a placeholder rather than a completed fine-tuning pipeline.
+- The current recommended local model is the calibrated artifact ensemble in `configs/best_artifact_ensemble.json`.
+- The strongest single fine-tuned checkpoint remains `configs/best_roberta_finetune.json`.
+- The strongest linear-probe variant remains `configs/best_roberta_probe.json`.
+- The strongest non-transformer local model remains `configs/best_hybrid_ensemble.json`.
+- The strongest pure sparse-score ensemble remains `configs/best_tfidf_ensemble.json`.
+- The strongest single-model sparse baseline remains `configs/best_tfidf_svm.json`.
+- The repository also includes an optional RoBERTa pipeline, but it depends on local pretrained weights or allowed Hugging Face downloads.
 
 ## Submission expectations
 
@@ -70,5 +93,5 @@ tests/
 - The loader reads `data/dontpatronizeme_pcl.tsv`, `data/train_semeval_parids-labels.csv`, `data/dev_semeval_parids-labels.csv`, and `data/task4_test.tsv`.
 - Binary labels follow the paper setup: original labels `0/1 -> 0`, `2/3/4 -> 1`.
 - `tfidf_svm` prefers `scikit-learn` for a real TF-IDF + linear SVM, and falls back to a lightweight token-scoring baseline if `scikit-learn` is not installed.
-- `roberta` is intentionally a scaffold: the interface and config path are in place, but actual Hugging Face fine-tuning still needs to be filled in next.
-- If you later implement the `roberta` path, add `transformers` and `torch` at that stage instead of putting them in the base install now.
+- `roberta` now supports local-cache loading, optional Hugging Face downloads, and a fallback offline tiny model, but its usefulness still depends on available pretrained weights.
+- If you want the strongest practical local result, use the calibrated artifact ensemble. If you want the strongest single trainable checkpoint, use the fine-tuned RoBERTa path.

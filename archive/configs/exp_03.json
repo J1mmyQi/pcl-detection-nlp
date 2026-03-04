@@ -1,0 +1,23 @@
+{
+  "data_dir": "data",
+  "artifacts_dir": "artifacts/exp_03",
+  "model_name": "tfidf_svm",
+  "random_state": 42,
+  "tfidf": {
+    "ngram_min": 1,
+    "ngram_max": 3,
+    "min_df": 1,
+    "max_features": null
+  },
+  "svm": {
+    "c": 2.0,
+    "class_weight": "balanced"
+  },
+  "roberta": {
+    "pretrained_model_name": "roberta-base",
+    "max_length": 256,
+    "learning_rate": 2e-05,
+    "batch_size": 16,
+    "epochs": 3
+  }
+}

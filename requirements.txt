@@ -1,0 +1,11 @@
+# Exact, tested environment for this repository.
+# Install with: python -m pip install -r requirements.txt
+
+# Core model and feature pipeline.
+scikit-learn==1.8.0
+
+# Notebook kernel support (sufficient for PyCharm/VS Code notebook execution).
+ipykernel==7.2.0
+
+# Plotting for EDA and evaluation figures.
+matplotlib==3.10.8

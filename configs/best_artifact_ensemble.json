@@ -1,0 +1,46 @@
+{
+  "data_dir": "data",
+  "artifacts_dir": "artifacts/best_artifact_ensemble",
+  "model_name": "artifact_ensemble",
+  "random_state": 42,
+  "tfidf": {},
+  "svm": {},
+  "ensemble": {
+    "members": [
+      {
+        "kind": "roberta",
+        "model_dir": "artifacts/roberta_download"
+      },
+      {
+        "kind": "roberta_probe",
+        "model_dir": "artifacts/best_roberta_probe"
+      },
+      {
+        "kind": "tfidf_ensemble",
+        "model_dir": "artifacts/best_hybrid_ensemble"
+      }
+    ],
+    "weights": [
+      0.5,
+      0.1,
+      0.4
+    ],
+    "threshold": 0.9839498290756974,
+    "normalization": "zscore",
+    "calibrators": [
+      {
+        "mean": -5.826367718497613,
+        "std": 3.242216815147897
+      },
+      {
+        "mean": -2.966102415159771,
+        "std": 1.4515464883782498
+      },
+      {
+        "mean": -0.3289427384024921,
+        "std": 0.41631176446066687
+      }
+    ]
+  },
+  "roberta": {}
+}

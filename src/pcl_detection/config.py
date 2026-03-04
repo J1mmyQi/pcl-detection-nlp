@@ -16,6 +16,7 @@ class ExperimentConfig:
     random_state: int
     tfidf: dict[str, Any]
     svm: dict[str, Any]
+    ensemble: dict[str, Any]
     roberta: dict[str, Any]
 
 
@@ -29,5 +30,6 @@ def load_config(path: str | Path) -> ExperimentConfig:
         random_state=int(payload.get("random_state", 42)),
         tfidf=dict(payload.get("tfidf", {})),
         svm=dict(payload.get("svm", {})),
+        ensemble=dict(payload.get("ensemble", {})),
         roberta=dict(payload.get("roberta", {})),
     )

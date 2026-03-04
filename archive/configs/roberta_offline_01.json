@@ -1,0 +1,17 @@
+{
+  "data_dir": "data",
+  "artifacts_dir": "artifacts/roberta_offline_01",
+  "model_name": "roberta",
+  "random_state": 42,
+  "tfidf": {},
+  "svm": {},
+  "ensemble": {},
+  "roberta": {
+    "pretrained_model_name": "roberta-base",
+    "max_length": 96,
+    "learning_rate": 0.0003,
+    "batch_size": 32,
+    "epochs": 5,
+    "threshold": 0.0
+  }
+}
