@@ -51,9 +51,9 @@
 
 \begin{titlepage}
     \centering
-    {\Large \textbf{\courseworktitle} \par}
-    \vspace{1.2em}
-    {\large A coursework report in research-paper format \par}
+    {\LARGE \textbf{\courseworktitle} \par}
+    \vspace{0.8em}
+    {\normalsize Research report \par}
     \vspace{2em}
 
     \begin{tabular}{>{\raggedright\arraybackslash}p{0.28\linewidth} p{0.62\linewidth}}
@@ -62,31 +62,22 @@
         Task & SemEval 2022 Task 4, Subtask 1 (binary PCL classification) \\
     \end{tabular}
 
-    \vfill
-
-    {\small
-    This report is structured to match the coursework specification while using a
-    concise research-paper presentation style. The content below currently
-    reflects the currently retained experiment set and the latest local
-    results available in the repository.
-    \par}
+\vfill
 \end{titlepage}
 
 
     \section{Introduction}
-    Patronising and condescending language (PCL) detection is difficult because the
-    relevant signal lies in framing rather than in topic alone. Paragraphs about
-    refugees, migrants, women, or poor families may be neutral, supportive, or
-    condescending while using broadly similar vocabulary, so the task depends on
-    distinguishing rhetorical stance rather than simply identifying subject matter.
+    Patronising and condescending language (PCL) detection is difficult because
+    the signal lies in framing rather than topic. Paragraphs about vulnerable
+    groups may be neutral, supportive, or condescending while using similar
+    vocabulary, so the task requires modeling stance rather than subject matter
+    alone.
 
-    This report presents a compact research workflow for the coursework task: it
-    reviews the task literature, analyzes the dataset, motivates the modeling
-    approach, and then evaluates the strongest currently retained local runs on the
-    official development split. The repository now contains tuned sparse baselines,
-    RoBERTa-based runs, and score-level combinations of saved models. The emphasis
-    here is on documenting what these local experiments show, rather than claiming
-    that one architecture is already the final endpoint of the coursework.
+    The report proceeds through literature review, dataset analysis, method
+    design, and evaluation on the official development split. The experiments
+    reported here include sparse baselines, RoBERTa-based runs, and
+    score-level ensembles; the aim is to summarize the strongest retained
+    local evidence rather than to claim that model exploration is complete.
 
 
     \section{Critical Review of the Task Paper}
@@ -100,45 +91,45 @@
     models that claim to capture stance rather than only topic.
 
     \subsection{Main contributions of the reviewed paper}
-    The task paper and the earlier dataset paper make four practical contributions
-    \cite{semeval2022,baseline}: they define a shared supervised task, release a
-    curated dataset, provide both binary and fine-grained label settings, and
-    establish baseline systems with a common evaluation protocol. Their most useful
-    contribution for this project is the operationalization of a socially subtle
-    phenomenon into a reproducible benchmark with fixed splits, submission files,
-    and a clear primary metric.
+    The task paper and the earlier dataset paper make four practical
+    contributions \cite{semeval2022,baseline}: they define a shared supervised
+    task, release a curated dataset, provide both binary and fine-grained label
+    settings, and establish baseline systems with a common evaluation protocol.
+    For this project, the key contribution is turning a socially subtle
+    phenomenon into a reproducible benchmark with fixed splits, submission
+    files, and a clear primary metric.
 
     \subsection{What the paper does well}
-    Its main strength is benchmark design. The task is difficult for the right
-    reason: PCL is often subtle, context-dependent, and superficially similar to
-    sympathetic language. The train/dev/test split supports fair comparison, while
-    the binary setting keeps the baseline problem tractable without making it easy.
-    The connection to a richer label taxonomy also gives the benchmark value beyond
-    the shared-task setting.
+    The main strength is benchmark design. The task is difficult for the right
+    reason: PCL is subtle, context-dependent, and often resembles sympathetic
+    language. The train/dev/test split supports fair comparison, while the
+    binary setting keeps the problem tractable without making it trivial. The
+    link to a richer label taxonomy also gives the benchmark value beyond the
+    shared-task setting.
 
     \subsection{Limitations and open issues}
-    The key limitation is annotation subjectivity: the boundary between empathy and
-    condescension is often ambiguous, so some label noise is unavoidable. A second
-    limitation is that strong scores can still come from shallow lexical shortcuts,
-    especially when certain community keywords recur. Finally, the benchmark
-    measures a controlled proxy for the problem rather than the full social
-    phenomenon, so leaderboard performance should not be treated as complete
-    evidence of discourse-level understanding.
+    The main limitation is annotation subjectivity: the boundary between empathy
+    and condescension is often ambiguous, so some label noise is unavoidable.
+    Strong scores can also come from shallow lexical shortcuts, especially when
+    certain community keywords recur. More broadly, the benchmark measures a
+    controlled proxy for the problem rather than the full social phenomenon, so
+    leaderboard performance should not be treated as complete evidence of
+    discourse-level understanding.
 
     \subsection{How the literature review informed this project}
-    The review directly informed three decisions in this project: selecting
-    positive-class F1 as the main metric, using class-balanced training to address
-    imbalance, and extending a word-only TF-IDF baseline with character n-grams to
-    capture some stylistic variation. It also motivates keeping contextual modeling
-    in scope once the gains from purely sparse features begin to saturate.
+    The review informed three decisions in this project: using positive-class
+    F1 as the main metric, applying class-balanced training to address
+    imbalance, and extending a word-only TF-IDF baseline with character
+    n-grams. It also motivates keeping contextual modeling in scope once gains
+    from purely sparse features begin to plateau.
 
 
     \section{Dataset Analysis and Preprocessing}
 
     \subsection{Dataset overview}
-    The coursework uses the \texttt{dontpatronizeme\_pcl.tsv} data together with the
-    official train, development, and test splits. The implemented loader converts
-    the original ordinal labels into the binary task required by the specification:
+    The experiments use the \texttt{dontpatronizeme\_pcl.tsv} data together with
+    the official train, development, and test splits. The implemented loader
+    converts the original ordinal labels into the binary task:
     labels \texttt{0} and \texttt{1} are mapped to \texttt{No PCL}, while labels
     \texttt{2}, \texttt{3}, and \texttt{4} are mapped to \texttt{PCL}.
 
@@ -159,16 +150,16 @@
     \end{tabular}
     \end{table}
 
-    The most important immediate observation is the severe class imbalance. The
-    positive class accounts for roughly 9.5\% of both the train and development
-    splits. This means accuracy would be a misleading primary metric and justifies
-    the coursework's emphasis on the positive-class F1 score.
+    The most important observation is severe class imbalance. The positive class
+    accounts for roughly 9.5\% of both the train and development splits. This
+    makes accuracy a poor primary metric and justifies the emphasis on
+    positive-class F1.
 
     \subsection{EDA technique 1: class distribution analysis}
     The first EDA step is class-distribution profiling. Because the dataset is
     strongly skewed toward the negative class, the current classifier uses
-    \texttt{class\_weight="balanced"} so minority-class errors matter more during
-    training.
+    \texttt{class\_weight="balanced"} so minority-class errors carry more
+    weight during training.
 
     \optionalfigure
     {report_assets/eda_label_distribution.png}
@@ -180,8 +171,8 @@
     The second EDA technique is lexical frequency analysis over topic keywords. In
     the positive training subset, the most frequent keywords are
     \texttt{homeless}, \texttt{in-need}, \texttt{poor-families}, and
-    \texttt{hopeless}. These keywords are informative but not decisive: they mark
-    topic domains, while the label still depends on how those groups are framed.
+    \texttt{hopeless}. These keywords are informative but not decisive: they
+    indicate topic domains, while the label still depends on framing.
 
     \begin{table}[H]
     \centering
@@ -211,29 +202,29 @@
     {Most frequent topic keywords in positive training examples.}
     {fig:keyword-frequency}
 
-    This observation motivates a mixed feature space: lexical features are retained
-    because they carry signal, but character n-grams are added to capture recurring
-    local phrasing patterns beyond simple topic words.
+    This motivates a mixed feature space: lexical features are retained because
+    they carry signal, but character n-grams are added to capture recurring
+    phrasing patterns beyond simple topic words.
 
     \subsection{Preprocessing decisions}
     The preprocessing pipeline is intentionally light:
     \begin{itemize}[leftmargin=1.5em]
-    \item labels are converted to the binary task required by the specification;
+    \item labels are converted to the binary task;
     \item Unicode accents are normalized during TF-IDF feature extraction;
     \item stop-word removal is disabled in the current best configuration;
     \item word-level and character-level TF-IDF features are both enabled;
     \item no heavy text normalization is applied, so most stylistic cues remain available.
     \end{itemize}
 
-    This is deliberate. Heavy normalization could erase the same stylistic cues that
-    help distinguish neutral reporting from soft condescension.
+    This is deliberate: heavy normalization could erase the same stylistic cues
+    that help distinguish neutral reporting from soft condescension.
 
 
     \section{Proposed Approach}
 
     \subsection{Method summary}
-    The repository now explores three related model families rather than a single
-    fixed classifier:
+    The study explores three related model families rather than a single fixed
+    classifier:
     \begin{itemize}[leftmargin=1.5em]
     \item tuned sparse models built from word and character TF-IDF features;
     \item RoBERTa-based checkpoints, including a fine-tuned model and a lighter probe-style variant;
@@ -244,16 +235,15 @@
     This progression addresses a specific weakness of the plain baseline. Word
     n-grams capture topic and short lexical cues, but many PCL examples differ
     mainly in framing. Sparse models therefore provide a transparent baseline,
-    while contextual encoders and score fusion test whether broader sentence-level
-    representations and complementary decision boundaries recover additional
-    positive cases.
+    while contextual encoders and score fusion test whether broader
+    sentence-level representations recover additional positive cases.
 
     \subsection{Expected outcome}
-    The target was to improve recall on PCL examples without collapsing precision.
-    That objective was achieved locally: the stronger runs recover substantially
-    more positives on the development split than the original sparse baseline. At
-    the same time, this report treats the current top local run as evidence from an
-    ongoing comparison, not as a claim that architectural exploration is finished.
+    The target was to improve recall on PCL examples without collapsing
+    precision. That objective was achieved locally: the stronger runs recover
+    substantially more positives on the development split than the original
+    sparse baseline. Even so, the current top run is treated as evidence from
+    an ongoing comparison, not as a final architectural claim.
 
 
     \section{Implementation and Training Setup}
@@ -266,31 +256,27 @@
     \item \texttt{training\_pipeline.py}: training, evaluation, and export.
     \end{itemize}
 
-The companion notebook (\texttt{coursework\_runner.ipynb}) is the main
-interactive runner, while the Python modules remain the implementation source
-of truth. Historical exploratory runs are retained separately under
-\texttt{archive/} so that the active repository surface stays focused on the
-final deliverable path. The \texttt{BestModel/} bundle now also includes a
-direct notebook copy, a code snapshot, mirrored submission files, and the
-checkpoint files needed to reload the selected final ensemble without relying
-on the gitignored \texttt{artifacts/} directory.
+The implementation keeps data handling, model definition, and
+training/evaluation separate. A self-contained \texttt{BestModel/} bundle is
+also retained so the selected final ensemble can be reloaded from committed
+files rather than from transient local artifacts.
 
     \subsection{Best configuration}
     Table~\ref{tab:best-config} summarizes the current best configuration stored in
-    \texttt{configs/best\_artifact\_ensemble.json}.
+    \texttt{best\_artifact\_ensemble.json}.
 
     \begin{table}[H]
     \centering
     \caption{Current highest-scoring local run configuration}
     \label{tab:best-config}
-    \begin{tabular}{ll}
+    \begin{tabular}{>{\raggedright\arraybackslash}p{0.26\linewidth} >{\raggedright\arraybackslash}p{0.64\linewidth}}
     \toprule
     Component & Setting \\
     \midrule
-    Member 1 & Fine-tuned RoBERTa artifact from \texttt{artifacts/roberta\_download} \\
-    Member 2 & RoBERTa probe artifact from \texttt{artifacts/best\_roberta\_probe} \\
-    Member 3 & Best non-transformer ensemble from \texttt{artifacts/best\_hybrid\_ensemble} \\
-    Member 4 & Fine-tuned probe variant from \texttt{artifacts/roberta\_probe\_finetuned\_01} \\
+    Member 1 & Fine-tuned RoBERTa checkpoint (\texttt{roberta\_download}) \\
+    Member 2 & RoBERTa probe checkpoint (\texttt{best\_roberta\_probe}) \\
+    Member 3 & Best non-transformer ensemble (\texttt{best\_hybrid\_ensemble}) \\
+    Member 4 & Fine-tuned probe variant (\texttt{roberta\_probe\_finetuned\_01}) \\
     Score normalization & Per-member z-score normalization before fusion \\
     Ensemble weights & 0.30 / 0.38 / 0.12 / 0.20 \\
     Decision rule & weighted score average with threshold \texttt{1.1838} \\
@@ -301,7 +287,7 @@ on the gitignored \texttt{artifacts/} directory.
     \subsection{Development-set results}
     The current best development-set metrics are shown in
     Table~\ref{tab:dev-results}. These values were read from the latest
-    \texttt{artifacts/best\_artifact\_ensemble/metrics.json} file.
+    \texttt{metrics.json} for the selected artifact ensemble.
 
     \begin{table}[H]
     \centering
@@ -332,19 +318,18 @@ on the gitignored \texttt{artifacts/} directory.
     \end{tabular}
     \end{table}
 
-    Relative to the original local baseline, the current highest-scoring run
-    improves the development-set F1 score by roughly 0.251 absolute points. The
-    final fused run remains recall-oriented, but the latest calibration also
-    recovers some precision relative to the earlier ensemble version, reducing the
-    false-positive burden while still identifying substantially more positive PCL
-    cases than the baseline. For this task, that trade-off is reasonable because
-    the positive class is rare and under-detection is a major failure mode.
+    Relative to the original baseline, the current highest-scoring run improves
+    development-set F1 by roughly 0.251 absolute points. The final fused run
+    remains recall-oriented, but the latest calibration also recovers some
+    precision relative to the earlier ensemble version, reducing false
+    positives while still identifying substantially more PCL cases than the
+    baseline. For this task, that trade-off is reasonable because the positive
+    class is rare and under-detection is a major failure mode.
 
 The comparison in Table~\ref{tab:experiment-comparison} also serves as a small
-ablation-style local evaluation: it shows first that sparse tuning materially
-improves on the baseline, then that a full contextual checkpoint outperforms
-the non-transformer family, and finally that score-level fusion of
-complementary saved runs adds another incremental gain.
+ablation-style local evaluation: sparse tuning improves on the baseline, a full
+contextual checkpoint outperforms the non-transformer family, and score-level
+fusion adds a further gain.
 
 \optionalfigure
     {report_assets/dev_precision_recall_curve.png}
@@ -355,9 +340,8 @@ complementary saved runs adds another incremental gain.
 Figure~\ref{fig:pr-curve} complements the single-threshold F1 score by showing
 the full precision-recall trade-off over the development split. The area under
 this curve is also strong in local terms (average precision 0.6091). The shape
-confirms that the retained operating point is part of a broader high-recall
-region rather than an isolated threshold artifact, which makes the local result
-more credible as an evaluation finding.
+suggests that the retained operating point is part of a broader high-recall
+region rather than an isolated threshold artifact.
 
 \optionalfigure
     {report_assets/dev_confusion_matrix.png}
@@ -365,12 +349,11 @@ more credible as an evaluation finding.
     {Confusion matrix for the best development-set run.}
     {fig:confusion-matrix}
 
-    The current model is stronger than the earlier untuned baseline used at the
-    start of the project and now exceeds the coursework's local development
-    reference threshold. Its main value in this report is therefore as evidence
-    that combining contextual and lexical signals materially improves local
-    performance, while still leaving room for stronger validation and further
-    checkpoint diversity.
+    The current model is substantially stronger than the initial untuned
+    baseline and exceeds the reference development threshold. Its main value
+    here is to show that combining contextual and
+    lexical signals materially improves local performance, while still leaving
+    room for stronger validation and further checkpoint diversity.
 
     \subsection{Why the tuned model performs better}
     The improvement comes from combining complementary score sources rather than
@@ -390,9 +373,9 @@ more credible as an evaluation finding.
     \item examples about women or poor families where condescension depends on tone rather than explicit wording.
     \end{itemize}
 
-    This suggests that the current sparse linear model still underfits
-    ensemble still faces a discourse-level boundary problem: even stronger runs can
-    identify topic correctly before missing the final rhetorical distinction.
+    This suggests that the current ensemble still faces a discourse-level
+    boundary problem: even stronger runs can identify topic correctly before
+    missing the final rhetorical distinction.
 
     \begin{table}[H]
     \centering
@@ -409,55 +392,43 @@ more credible as an evaluation finding.
     \end{tabular}
     \end{table}
 
-    False positives show the complementary failure mode. Once recall is increased,
-    the model becomes more willing to label emotionally charged language as PCL even
-    when the framing is not clearly condescending. This remains the main trade-off
-    of the current setup: broader positive coverage makes the decision boundary
-    harder to maintain even after combining multiple complementary models.
+    False positives show the complementary failure mode. As recall increases,
+    the model becomes more willing to label emotionally charged language as PCL
+    even when the framing is not clearly condescending. This remains the main
+    trade-off of the current setup: broader positive coverage makes the
+    decision boundary harder to maintain even after combining multiple models.
 
     \subsection{Implementation notes}
-    The repository now validates submission formatting before writing prediction
-    files. This ensures that:
+    The implementation validates submission formatting before writing
+    prediction files. This ensures that:
     \begin{itemize}[leftmargin=1.5em]
     \item each file contains exactly one prediction per input example;
     \item each line contains only \texttt{0} or \texttt{1};
-    \item the exported files are directly compatible with the coursework
-    submission requirements.
+    \item the exported files are directly compatible with the task submission
+    format.
     \end{itemize}
 
 
     \section{Conclusion}
-    This report documents a complete local PCL detection pipeline in a format that
-    matches the coursework requirements while retaining a compact research-paper
-    presentation. The repository now supports a meaningful progression from sparse
-    baselines to contextual runs and score-level fusion, and the strongest current
-    local result improves clearly over the earlier baseline on the development
-    split.
+    This report documents a complete local PCL detection pipeline in compact
+    form. The experimental workflow supports a clear progression from sparse
+    baselines to contextual runs and score-level fusion, and the strongest
+    retained local result improves substantially over the initial baseline on
+    the development split.
 
-    The experimental gains are real, but the more useful conclusion at this stage
-    is methodological caution: the local comparison now favors combining
-    complementary signals, yet the remaining errors still show how difficult it is
-    to separate empathy from condescension in borderline cases. The present report
-    therefore treats the top local result as strong evidence, not as a final claim
-    that model exploration is complete.
+    The gains are meaningful, but the more useful conclusion is methodological:
+    combining complementary signals helps, yet the remaining errors still show
+    how difficult it is to separate empathy from condescension in borderline
+    cases. The top local result is therefore best treated as strong evidence,
+    not as proof that model exploration is finished.
 
     \subsection*{Next technical step}
-    The most justified next step is to make the validation protocol stronger rather
-    than merely broader: additional full fine-tuning runs with different random
-    seeds, cleaner calibration splits, and more disciplined checkpoint ensembling
-    would provide a firmer estimate of what genuinely transfers beyond the current
-    development set.
+    The most justified next step is to strengthen validation rather than merely
+    broaden model search: additional full fine-tuning runs with different
+    random seeds, cleaner calibration splits, and more disciplined checkpoint
+    ensembling would give a firmer estimate of what transfers beyond the
+    current development set.
 
-
-\section*{Submission notes}
-\begin{itemize}[leftmargin=1.5em]
-    \item Confirm that the title-page author and repository details match the final submitted repository state.
-    \item The notebook saves report figures directly into \texttt{report\_assets/}; keep those committed copies so the compiled report includes the final plots.
-    \item Preserve \texttt{dev.txt} and \texttt{test.txt} in their submission-ready form.
-\end{itemize}
-
-
-    \section*{References}
     \begin{thebibliography}{9}
 
     \bibitem{semeval2022}
