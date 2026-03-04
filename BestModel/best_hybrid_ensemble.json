@@ -1,6 +1,6 @@
 {
   "data_dir": "data",
-  "artifacts_dir": "artifacts/best_hybrid_ensemble",
+  "artifacts_dir": "BestModel/checkpoints/best_hybrid_ensemble",
   "model_name": "tfidf_ensemble",
   "random_state": 42,
   "tfidf": {},

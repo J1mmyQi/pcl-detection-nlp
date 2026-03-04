@@ -18,27 +18,36 @@
       {
         "kind": "tfidf_ensemble",
         "model_dir": "artifacts/best_hybrid_ensemble"
+      },
+      {
+        "kind": "roberta_probe",
+        "model_dir": "artifacts/roberta_probe_finetuned_01"
       }
     ],
     "weights": [
-      0.5,
-      0.1,
-      0.4
+      0.3,
+      0.38,
+      0.12,
+      0.2
     ],
-    "threshold": 0.9839498290756974,
+    "threshold": 1.1837868858489249,
     "normalization": "zscore",
     "calibrators": [
       {
         "mean": -5.826367718497613,
-        "std": 3.242216815147897
+        "std": 3.2422168151478976
       },
       {
         "mean": -2.966102415159771,
-        "std": 1.4515464883782498
+        "std": 1.45154648837825
       },
       {
-        "mean": -0.3289427384024921,
+        "mean": -0.32894273840249205,
         "std": 0.41631176446066687
+      },
+      {
+        "mean": -8.780894808988407,
+        "std": 5.768715129287058
       }
     ]
   },

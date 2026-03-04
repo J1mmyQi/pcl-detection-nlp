@@ -1,0 +1,11 @@
+{
+  "pretrained_model_name": "BestModel/checkpoints/roberta_download",
+  "max_length": 128,
+  "learning_rate": 2e-05,
+  "batch_size": 16,
+  "epochs": 3,
+  "threshold": 0.0,
+  "allow_download": false,
+  "cache_dir": "BestModel/checkpoints/roberta_download",
+  "backend": "transformers"
+}

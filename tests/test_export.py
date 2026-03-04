@@ -17,13 +17,20 @@ from pcl_detection.training_pipeline import _validate_submission_predictions
 class ExportTests(unittest.TestCase):
     def test_existing_submission_files_match_spec_format(self) -> None:
         bundle = load_dataset_bundle(ROOT / "data")
+        best_model_dir = ROOT / "BestModel"
         dev_lines = (ROOT / "dev.txt").read_text(encoding="utf-8").splitlines()
         test_lines = (ROOT / "test.txt").read_text(encoding="utf-8").splitlines()
+        best_dev_lines = (best_model_dir / "dev.txt").read_text(encoding="utf-8").splitlines()
+        best_test_lines = (best_model_dir / "test.txt").read_text(encoding="utf-8").splitlines()
 
         self.assertEqual(len(dev_lines), len(bundle.dev))
         self.assertEqual(len(test_lines), len(bundle.test))
         self.assertTrue(all(line in {"0", "1"} for line in dev_lines))
         self.assertTrue(all(line in {"0", "1"} for line in test_lines))
+        self.assertEqual(best_dev_lines, dev_lines)
+        self.assertEqual(best_test_lines, test_lines)
+        self.assertTrue(all(line in {"0", "1"} for line in best_dev_lines))
+        self.assertTrue(all(line in {"0", "1"} for line in best_test_lines))
 
     def test_validate_submission_predictions_rejects_non_binary_labels(self) -> None:
         with self.assertRaisesRegex(ValueError, "0 or 1"):

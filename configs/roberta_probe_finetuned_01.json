@@ -1,0 +1,21 @@
+{
+  "data_dir": "data",
+  "artifacts_dir": "artifacts/roberta_probe_finetuned_01",
+  "model_name": "roberta_probe",
+  "random_state": 42,
+  "tfidf": {},
+  "svm": {},
+  "ensemble": {},
+  "roberta": {
+    "pretrained_model_name": "artifacts/roberta_download",
+    "max_length": 128,
+    "batch_size": 16,
+    "threshold": 0.0,
+    "allow_download": false,
+    "cache_dir": "hf_cache",
+    "huggingface_token": "",
+    "probe_c": 2.0,
+    "class_weight": null,
+    "tune_threshold": false
+  }
+}

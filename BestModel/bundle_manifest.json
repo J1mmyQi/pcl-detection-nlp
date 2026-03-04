@@ -1,0 +1,31 @@
+{
+  "selected_model": "best_artifact_ensemble",
+  "selected_config": "BestModel/best_artifact_ensemble.json",
+  "self_contained_checkpoint_dirs": [
+    "BestModel/checkpoints/ensemble",
+    "BestModel/checkpoints/roberta_download",
+    "BestModel/checkpoints/best_roberta_probe",
+    "BestModel/checkpoints/roberta_probe_finetuned_01",
+    "BestModel/checkpoints/best_hybrid_ensemble"
+  ],
+  "included_runner": "BestModel/coursework_runner.ipynb",
+  "included_code_snapshot": "BestModel/code/pcl_detection",
+  "submission_files": {
+    "dev": {
+      "path": "BestModel/dev.txt",
+      "line_count": 2094,
+      "allowed_labels": [
+        0,
+        1
+      ]
+    },
+    "test": {
+      "path": "BestModel/test.txt",
+      "line_count": 3832,
+      "allowed_labels": [
+        0,
+        1
+      ]
+    }
+  }
+}
